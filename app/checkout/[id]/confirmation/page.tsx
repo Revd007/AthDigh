@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { formatPrice } from "@/lib/utils";
-import { Loader2, CheckCircle } from "lucide-react";
+import { Loader2, CheckCircle, Banknote, QrCode } from "lucide-react";
 import Link from "next/link";
 
 interface Order {

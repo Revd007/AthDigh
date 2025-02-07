@@ -11,6 +11,10 @@ import { formatPrice } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { Loader2, CreditCard, QrCode } from "lucide-react";
 import Image from "next/image";
+import { PaymentMethods } from "@/components/payment/payment-methods";
+import { createServerSupabaseClient } from "@/lib/server/supabase";
+import { createPayment } from "@/actions/payment";
+import { toast } from "@/components/ui/toast";
 
 interface PaymentMethod {
   id: string;
@@ -38,6 +42,8 @@ export default function CheckoutPage() {
     email: "",
     phoneNumber: "",
   });
+  const [paymentMethodId, setPaymentMethodId] = useState<string>("");
+  const [bankAccountId, setBankAccountId] = useState<string>("");
 
   const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
@@ -75,26 +81,20 @@ export default function CheckoutPage() {
       if (orderError) throw orderError;
 
       // Create payment
-      const { error: paymentError } = await supabase
-        .from("payments")
-        .insert([
-          {
-            order_id: order.id,
-            payment_method_id: selectedPaymentMethod,
-            bank_account_id: selectedBank || null,
-            amount: total,
-            status: "pending",
-          },
-        ]);
+      const { data: payment, error } = await createPayment({
+        orderId: order.id,
+        paymentMethodId,
+        bankAccountId,
+        amount: total,
+      });
 
-      if (paymentError) throw paymentError;
+      if (error) throw error;
 
       // Clear cart and redirect to confirmation page
       clearCart();
-      router.push(`/checkout/${order.id}/confirmation`);
+      router.push(`/checkout/${payment.id}/confirmation`);
     } catch (error: any) {
-      console.error("Checkout error:", error);
-      alert(error.message);
+      toast({ title: "Payment Error", description: error.message });
     } finally {
       setLoading(false);
     }
@@ -151,45 +151,12 @@ export default function CheckoutPage() {
 
             <div className="space-y-4 mt-8">
               <h2 className="text-xl font-semibold">Payment Method</h2>
-              <RadioGroup
-                value={selectedPaymentMethod}
-                onValueChange={setSelectedPaymentMethod}
-                className="grid gap-4"
-              >
-                {paymentMethods.map((method) => (
-                  <div key={method.id} className="flex items-center space-x-2">
-                    <RadioGroupItem value={method.id} id={method.id} />
-                    <Label htmlFor={method.id} className="flex items-center">
-                      {method.type === 'bank' ? (
-                        <CreditCard className="w-4 h-4 mr-2" />
-                      ) : (
-                        <QrCode className="w-4 h-4 mr-2" />
-                      )}
-                      {method.name}
-                    </Label>
-                  </div>
-                ))}
-              </RadioGroup>
-
-              {selectedPaymentMethod && paymentMethods.find(m => m.id === selectedPaymentMethod)?.type === 'bank' && (
-                <div className="space-y-4">
-                  <h3 className="font-medium">Select Bank</h3>
-                  <RadioGroup
-                    value={selectedBank}
-                    onValueChange={setSelectedBank}
-                    className="grid gap-4"
-                  >
-                    {bankAccounts.map((bank) => (
-                      <div key={bank.id} className="flex items-center space-x-2">
-                        <RadioGroupItem value={bank.id} id={bank.id} />
-                        <Label htmlFor={bank.id}>
-                          {bank.bank_name} - {bank.account_number}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                </div>
-              )}
+              <PaymentMethods
+                onSelect={(methodId, bankId) => {
+                  setPaymentMethodId(methodId);
+                  setBankAccountId(bankId || "");
+                }}
+              />
             </div>
 
             <Button type="submit" className="w-full mt-8" disabled={loading}>
