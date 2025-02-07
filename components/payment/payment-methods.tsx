@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Banknote, QrCode } from "lucide-react";
-import { createClient } from "@/lib/server/supabase";
+import { supabase } from "@/lib/supabase";
 import type { Database } from "@/types/supabase";
 
 type PaymentMethod = Database["public"]["Tables"]["payment_methods"]["Row"];
@@ -22,7 +22,6 @@ export function PaymentMethods({
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient();
       const { data: methods } = await supabase
         .from("payment_methods")
         .select("*")

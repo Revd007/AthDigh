@@ -116,6 +116,13 @@ type ToastProps = React.ComponentPropsWithoutRef<typeof Toast>;
 
 type ToastActionElement = React.ReactElement<typeof ToastAction>;
 
+type ToastType = {
+  id: string;
+  title?: string;
+  description?: string;
+  action?: React.ReactNode;
+} & React.ComponentProps<typeof Toast>;
+
 export {
   type ToastProps,
   type ToastActionElement,
@@ -127,3 +134,24 @@ export {
   ToastClose,
   ToastAction,
 };
+
+export function Toaster() {
+  const [toasts, setToasts] = React.useState<ToastType[]>([]);
+
+  return (
+    <ToastProvider>
+      {toasts.map(({ id, title, description, action, ...props }) => (
+        <Toast key={id} {...props}>
+          <div className="grid gap-1">
+            {title && <ToastTitle>{title}</ToastTitle>}
+            {description && (
+              <ToastDescription>{description}</ToastDescription>
+            )}
+          </div>
+          {action}
+        </Toast>
+      ))}
+      <ToastViewport />
+    </ToastProvider>
+  );
+}

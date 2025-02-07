@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,7 +14,8 @@ import Image from "next/image";
 import { PaymentMethods } from "@/components/payment/payment-methods";
 import { createServerSupabaseClient } from "@/lib/server/supabase";
 import { createPayment } from "@/actions/payment";
-import { toast } from "@/components/ui/toast";
+import { useToast } from "@/components/ui/use-toast";
+import type { CartItem } from "@/lib/store";
 
 interface PaymentMethod {
   id: string;
@@ -44,76 +45,92 @@ export default function CheckoutPage() {
   });
   const [paymentMethodId, setPaymentMethodId] = useState<string>("");
   const [bankAccountId, setBankAccountId] = useState<string>("");
+  const { toast } = useToast();
+console.log(items)  
+  const total = items.reduce((acc: number, item: CartItem) => acc + item.price * item.quantity, 0);
 
-  const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+  // useEffect(() => {
+  //   const checkAuth = async () => {
+  //     const { data: { user } } = await supabase.auth.getUser();
+  //     if (!user) {
+  //       router.push("/login");
+  //     }
+  //   };
+    
+  //   if (items.length === 0) {
+  //     router.push("/cart");
+  //   }
+    
+  //   checkAuth();
+  // }, [items.length, router]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setShippingInfo((prev) => ({ ...prev, [name]: value }));
-  };
+  // const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const { name, value } = e.target;
+  //   setShippingInfo((prev) => ({ ...prev, [name]: value }));
+  // };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setLoading(true);
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
+  //   try {
+  //     const { data: { user } } = await supabase.auth.getUser();
       
-      if (!user) {
-        throw new Error("Please sign in to complete your order");
-      }
+  //     if (!user) {
+  //       throw new Error("Please sign in to complete your order");
+  //     }
 
-      // Create order
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert([
-          {
-            user_id: user.id,
-            items,
-            shipping_info: shippingInfo,
-            total_amount: total,
-            status: "pending",
-          },
-        ])
-        .select()
-        .single();
+  //     // Create order
+  //     const { data: order, error: orderError } = await supabase
+  //       .from("orders")
+  //       .insert([
+  //         {
+  //           user_id: user.id,
+  //           items,
+  //           shipping_info: shippingInfo,
+  //           total_amount: total,
+  //           status: "pending",
+  //         },
+  //       ])
+  //       .select()
+  //       .single();
 
-      if (orderError) throw orderError;
+  //     if (orderError) throw orderError;
 
-      // Create payment
-      const { data: payment, error } = await createPayment({
-        orderId: order.id,
-        paymentMethodId,
-        bankAccountId,
-        amount: total,
-      });
+  //     // Create payment
+  //     const { data: payment, error } = await createPayment({
+  //       orderId: order.id,
+  //       paymentMethodId,
+  //       bankAccountId,
+  //       amount: total,
+  //     });
 
-      if (error) throw error;
+  //     if (error) throw error;
 
-      // Clear cart and redirect to confirmation page
-      clearCart();
-      router.push(`/checkout/${payment.id}/confirmation`);
-    } catch (error: any) {
-      toast({ title: "Payment Error", description: error.message });
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     // Clear cart and redirect to confirmation page
+  //     clearCart();
+  //     router.push(`/checkout/${payment.id}/confirmation`);
+  //   } catch (error: any) {
+  //     toast({ title: "Payment Error", description: error.message });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
-  if (items.length === 0) {
-    return (
-      <div className="container max-w-screen-xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-4">Your cart is empty</h1>
-        <Button onClick={() => router.push("/")}>Continue Shopping</Button>
-      </div>
-    );
-  }
+  // if (items.length === 0) {
+  //   return (
+  //     <div className="container max-w-screen-xl mx-auto px-4 py-8">
+  //       <h1 className="text-2xl font-bold mb-4">Your cart is empty</h1>
+  //       <Button onClick={() => router.push("/")}>Continue Shopping</Button>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="container max-w-screen-xl mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-8">Checkout</h1>
-      
-      <div className="grid md:grid-cols-2 gap-8">
+      <pre>{JSON.stringify(items, null, 2)}</pre>
+      {/* <div className="grid md:grid-cols-2 gap-8">
         <div>
           <h2 className="text-xl font-semibold mb-4">Contact Information</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -193,7 +210,7 @@ export default function CheckoutPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

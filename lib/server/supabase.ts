@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
-import { Database } from '@/types/supabase';
+import type { Database } from '@/types/supabase';
 
 // Only use this client in server components/actions!
 export const createServerSupabaseClient = async () => {
